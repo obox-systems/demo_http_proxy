@@ -1,0 +1,14 @@
+logging = "stdio"
+
+[tls]
+enabled = false
+key = "key.pem"
+cert = "cert.pem"
+
+[proxy]
+max_header = 1024
+max_body = 1024
+buffers = 4096
+pool_limit = 64
+keep_alive = 3600
+timeout = 60

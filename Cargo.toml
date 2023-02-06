@@ -1,0 +1,19 @@
+[package]
+name = "http_stream_proxy"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "http_stream_proxy"
+
+[dependencies]
+actix-web = { version = "4.3.0", features = ["macros", "openssl"] }
+config = { version = "0.13.3", default-features = false, features = ["toml"] }
+openssl = { version = "0.10.45", features = ["v111"] }
+reqwest = "0.11.14"
+serde = { version = "1.0.152", features = ["derive"] }
+tokio = { version = "1.25.0", features = ["full"] }

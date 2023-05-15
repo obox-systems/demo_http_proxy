@@ -1,11 +1,12 @@
 # Simple HTTP proxy demo
 
-This is a proxy server.
+This is a reverse proxy server.
 
-The data that is sent through this server goes to another server.
+The data that is sent through this server goes to another server and back to the client.
 
 It's configurable via `config.toml` file.
-This server also cuts off data that does not need to be forwarded.
+
+![Gif demo](/demo/recording.gif?raw=true "Making requests through the proxy")
 
 # Try it out!
 

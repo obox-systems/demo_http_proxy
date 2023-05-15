@@ -2,7 +2,6 @@ use std::net::TcpListener;
 
 use actix_web::{HttpServer, App, HttpResponse, web::{self, Bytes}, dev::{self, ResourcePath, ServiceResponse, Server}, Error, body::BoxBody, FromRequest};
 use openssl::ssl::{SslFiletype, SslMethod, SslAcceptor};
-use reqwest::Version;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]

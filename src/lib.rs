@@ -1,17 +1,23 @@
+#![ warn( rust_2018_idioms ) ]
+#![ warn( missing_debug_implementations ) ]
+#![ warn( missing_docs ) ]
+
+//! This is a reverse proxy server.
+
 use std::net::TcpListener;
 
 use actix_web::{HttpServer, App, HttpResponse, web::{self, Bytes}, dev::{self, ResourcePath, ServiceResponse, Server}, Error, body::BoxBody, FromRequest};
 use openssl::ssl::{SslFiletype, SslMethod, SslAcceptor};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 enum Logging {
   #[serde(rename = "stdio")]
   Stdio,
   File(String)
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 struct Tls {
   enabled: bool,
@@ -25,7 +31,7 @@ impl Default for Tls {
   }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 struct Proxy {
   max_header: Option<usize>,
@@ -49,7 +55,8 @@ impl Default for Proxy {
   }
 }
 
-#[derive(Deserialize, Serialize)]
+/// Application configuration.
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct AppConf {
   tls: Tls,
@@ -97,6 +104,7 @@ async fn proxy(req: dev::ServiceRequest) -> Result<dev::ServiceResponse, Error> 
   Ok( ServiceResponse::new(req.request().to_owned(), res) )
 }
 
+/// Binds to the address and serves the proxy.
 pub fn run(listener: TcpListener, app: AppConf) -> Result<Server, Box<dyn std::error::Error>> {
   let proxy = HttpServer::new( || {
     App::new().service(

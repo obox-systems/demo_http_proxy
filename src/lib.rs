@@ -1,20 +1,25 @@
-#![ warn( rust_2018_idioms ) ]
-#![ warn( missing_debug_implementations ) ]
-#![ warn( missing_docs ) ]
+#![warn(rust_2018_idioms)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_docs)]
 
 //! This is a reverse proxy server.
 
 use std::net::TcpListener;
 
-use actix_web::{HttpServer, App, HttpResponse, web::{self, Bytes}, dev::{self, ResourcePath, ServiceResponse, Server}, Error, body::BoxBody, FromRequest};
-use openssl::ssl::{SslFiletype, SslMethod, SslAcceptor};
+use actix_web::{
+  body::BoxBody,
+  dev::{self, ResourcePath, Server, ServiceResponse},
+  web::{self, Bytes},
+  App, Error, FromRequest, HttpResponse, HttpServer,
+};
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 enum Logging {
   #[serde(rename = "stdio")]
   Stdio,
-  File(String)
+  File(String),
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -22,12 +27,16 @@ enum Logging {
 struct Tls {
   enabled: bool,
   key: String,
-  cert: String
+  cert: String,
 }
 
 impl Default for Tls {
   fn default() -> Self {
-    Self { enabled: false, key: "key.pem".into(), cert: "cert.pem".into() }
+    Self {
+      enabled: false,
+      key: "key.pem".into(),
+      cert: "cert.pem".into(),
+    }
   }
 }
 
@@ -50,7 +59,7 @@ impl Default for Proxy {
       buffers: 4096,
       pool_limit: Some(64),
       keep_alive: 3600,
-      timeout: 60
+      timeout: 60,
     }
   }
 }
@@ -61,7 +70,7 @@ impl Default for Proxy {
 pub struct AppConf {
   tls: Tls,
   proxy: Proxy,
-  logging: Logging
+  logging: Logging,
 }
 
 impl Default for AppConf {
@@ -69,27 +78,24 @@ impl Default for AppConf {
     Self {
       tls: Tls::default(),
       proxy: Proxy::default(),
-      logging: Logging::Stdio
+      logging: Logging::Stdio,
     }
   }
 }
 
-
 async fn proxy(req: dev::ServiceRequest) -> Result<dev::ServiceResponse, Error> {
   let uri = req.uri().to_string();
-  
+
   let method = req.method().to_owned();
 
-  let url = reqwest::Url::parse(
-    &format!("http://127.0.0.1:8081{}", uri.path())
-  ).unwrap();
-  
+  let url = reqwest::Url::parse(&format!("http://127.0.0.1:8081{}", uri.path())).unwrap();
+
   let p_res = reqwest::Client::builder()
-    .build().unwrap()
+    .build()
+    .unwrap()
     .request(method, url);
   let p_res = if let Ok(body) = Bytes::extract(req.request()).await {
-    p_res.body(body)
-      .send().await.unwrap()
+    p_res.body(body).send().await.unwrap()
   } else {
     p_res.send().await.unwrap()
   };
@@ -97,29 +103,21 @@ async fn proxy(req: dev::ServiceRequest) -> Result<dev::ServiceResponse, Error> 
   let code = p_res.status();
   let bytes = p_res.bytes().await.unwrap();
 
-  let res = 
-    HttpResponse::new(code)
-      .set_body(BoxBody::new(bytes));
-  
-  Ok( ServiceResponse::new(req.request().to_owned(), res) )
+  let res = HttpResponse::new(code).set_body(BoxBody::new(bytes));
+
+  Ok(ServiceResponse::new(req.request().to_owned(), res))
 }
 
 /// Binds to the address and serves the proxy.
 pub fn run(listener: TcpListener, app: AppConf) -> Result<Server, Box<dyn std::error::Error>> {
-  let proxy = HttpServer::new( || {
-    App::new().service(
-      web::service("{any}")
-        .finish(proxy)
-    )
-  });
+  let proxy = HttpServer::new(|| App::new().service(web::service("{any}").finish(proxy)));
 
   if app.tls.enabled {
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder.set_private_key_file(app.tls.key, SslFiletype::PEM)?;
     builder.set_certificate_chain_file(app.tls.cert)?;
     Ok(proxy.listen_openssl(listener, builder)?.run())
-  }
-  else {
+  } else {
     Ok(proxy.listen(listener)?.run())
   }
 }
